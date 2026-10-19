@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mapa logístico</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body {
+  margin: 0;
+  background: #EDF1F4;
+  color: #1B2430;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.wrap { max-width: 940px; margin: 0 auto; padding: 22px 16px 48px; }
+.eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #566173; letter-spacing: 0.02em; margin: 0 0 4px; }
+h1 { font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 27px; line-height: 1.15; margin: 0 0 10px; color: #14202B; }
+.eq { font-family: 'JetBrains Mono', monospace; font-size: 15px; background: #fff; border: 1px solid #D4DBE2; border-radius: 6px; padding: 8px 12px; display: inline-block; color: #2F3B4A; }
+.intro { font-size: 13.5px; color: #4A5568; line-height: 1.55; margin: 12px 0 0; max-width: 74ch; }
+.card { background: #fff; border: 1px solid #D4DBE2; border-radius: 12px; padding: 16px; margin-top: 16px; }
+.cardTitle { font-family: 'Source Serif 4', serif; font-size: 17px; font-weight: 600; margin: 0 0 4px; color: #14202B; }
+.cardSub { font-size: 12.5px; color: #6B7686; margin: 0 0 10px; line-height: 1.5; max-width: 82ch; }
+.row { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+.lbl { font-family: 'JetBrains Mono', monospace; font-size: 13px; flex-shrink: 0; color: #2F3B4A; }
+.lbl.w { width: 74px; }
+input[type="range"] { flex: 1; accent-color: #C98A2C; min-width: 140px; }
+.status { font-family: 'JetBrains Mono', monospace; font-size: 13px; background: #F5F1E8; border: 1px solid #E7DCC2; border-radius: 8px; padding: 9px 11px; margin-top: 10px; color: #5A4A22; line-height: 1.6; white-space: pre-wrap; overflow-x: auto; }
+.status .m { color: #8A7A55; }
+.status .s { color: #2F6F6B; font-weight: 500; }
+.status .u { color: #A0602A; font-weight: 500; }
+.status .p { color: #7D5BA6; font-weight: 500; }
+.hint { font-size: 12.5px; color: #6B7686; line-height: 1.5; margin: 8px 0 0; }
+.btnRow { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+button.action { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: #14202B; color: #F2F5F7; border: none; border-radius: 7px; padding: 9px 13px; cursor: pointer; }
+button.action.secondary { background: #fff; color: #14202B; border: 1px solid #D4DBE2; }
+button.action.secondary.on { background: #14202B; color: #F2F5F7; border-color: #14202B; }
+button.action:hover { opacity: 0.88; }
+button.action.small { padding: 6px 10px; font-size: 12px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #4A5568; }
+.legend span.sw { display:inline-block; width:14px; height:3px; margin-right:5px; vertical-align:middle; }
+.legend span.sw.dash { height: 0; border-top: 2px dashed; background: none !important; }
+.legend span.dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+footer { margin-top: 22px; font-size: 11.5px; color: #8994A3; font-family: 'JetBrains Mono', monospace; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 12px; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+.plotLbl { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #566173; margin: 12px 0 4px; }
+.plotLbl:first-child { margin-top: 0; }
+input[type="number"] {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #14202B;
+  border: 1px solid #D4DBE2; border-radius: 6px; padding: 6px 8px; background: #fff; width: 84px;
+}
+.checks { display: flex; align-items: center; gap: 7px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #2F3B4A; cursor: pointer; }
+.checks input { accent-color: #C98A2C; }
+.ctl { display: flex; align-items: center; gap: 8px; }
+.ctl label, .ctl .lbl { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #2F3B4A; }
+.ctls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; margin: 10px 0; }
+.seg { display: inline-flex; border: 1px solid #D4DBE2; border-radius: 7px; overflow: hidden; }
+.seg button { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; border: none; background: #fff; color: #14202B; padding: 7px 11px; cursor: pointer; }
+.seg button + button { border-left: 1px solid #D4DBE2; }
+.seg button.on { background: #14202B; color: #F2F5F7; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; max-width: 460px; }
+.grid4 div { display: flex; flex-direction: column; gap: 3px; }
+.grid4 span, .mini { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #6B7686; }
+.grid4 input { width: 100%; }
+details { margin-top: 10px; font-size: 12.5px; color: #4A5568; line-height: 1.55; }
+details summary { cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #2F3B4A; }
+details p { margin: 6px 0 0; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.steps { margin: 10px 0 0; padding-left: 20px; font-size: 13px; color: #4A5568; line-height: 1.55; max-width: 80ch; }
+.steps li { margin: 3px 0; }
+canvas { display: block; width: 100%; }
+canvas.click { cursor: crosshair; }
+#bdCv { cursor: crosshair; touch-action: none; }
+table.tbl { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #2F3B4A; margin-top: 10px; width: 100%; max-width: 640px; }
+.tblWrap { overflow-x: auto; }
+table.tbl th { text-align: right; font-weight: 500; color: #6B7686; border-bottom: 1px solid #D4DBE2; padding: 5px 10px; white-space: nowrap; }
+table.tbl td { text-align: right; padding: 4px 10px; border-bottom: 1px solid #EEF1F4; white-space: nowrap; }
+table.tbl td:last-child, table.tbl th:last-child { text-align: center; }
+table.tbl button { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: #fff; border: 1px solid #D4DBE2; border-radius: 6px; padding: 3px 8px; cursor: pointer; color: #14202B; }
+table.tbl button:hover { border-color: #14202B; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">
+    Dinámica no lineal · Cátedra Mindlin<br>
+    Mapas 1D · Mapa logístico · Ejercicio 4
+  </p>
+  <h1>Mapa logístico: de un punto fijo al caos</h1>
+  <span class="eq">xₙ₊₁ = f(xₙ) = μ xₙ (1 − xₙ),   μ ∈ [0, 4]</span>
+  <p class="intro">Es la versión discreta del crecimiento logístico: xₙ es la población en la generación n, medida
+  en unidades de la capacidad máxima. Para 0 ≤ μ ≤ 4 el intervalo [0, 1] es invariante: ninguna órbita que arranque ahí
+  se escapa. A pesar de ser una parábola, al subir μ el mapa pasa de tener un punto fijo atractor a órbitas periódicas
+  cada vez más largas y, finalmente, a órbitas que no se repiten nunca.</p>
+  <ol class="steps">
+    <li>Encontrá los puntos fijos y su estabilidad, y verificalos en el cobweb con distintos μ (sección 1).</li>
+    <li>Las órbitas de período k son puntos fijos de fᵏ. Mostrá f² en el cobweb: ¿desde qué μ aparecen puntos fijos nuevos? ¿Cuándo son estables?</li>
+    <li>Recorré el diagrama de bifurcaciones y ubicá los valores de μ donde aparecen órbitas periódicas nuevas (sección 2).</li>
+    <li>Medí cómo se acumulan las duplicaciones de período (sección 3).</li>
+  </ol>
+
+  <!-- ============ 1. Órbitas, cobweb y fᵏ ============ -->
+  <div class="card">
+    <p class="cardTitle">1 · Órbitas, cobweb y órbitas periódicas</p>
+    <p class="cardSub">Hacé clic en el cobweb para elegir x₀. Con fᵏ se superpone el mapa iterado k veces: sus intersecciones
+      con la diagonal son los puntos de las órbitas de período k (incluidos los puntos fijos de f), marcados según su estabilidad.
+      Con «descartar transitorio» se itera 1000 veces antes de dibujar, para ver sólo el comportamiento asintótico.
+      La segunda órbita arranca en x₀ + δ.</p>
+    <div class="row">
+      <span class="lbl w">μ</span>
+      <input type="range" id="mu" min="0" max="4" step="0.001" value="3.2" />
+      <input type="number" id="muN" min="0" max="4" step="0.001" value="3.2" />
+    </div>
+    <div class="btnRow" id="muCases">
+      <button class="action secondary small" data-v="0.8">μ = 0.8</button>
+      <button class="action secondary small" data-v="2.5">μ = 2.5</button>
+      <button class="action secondary small" data-v="2.9">μ = 2.9</button>
+      <button class="action secondary small" data-v="3.2">μ = 3.2</button>
+      <button class="action secondary small" data-v="3.5">μ = 3.5</button>
+      <button class="action secondary small" data-v="3.56">μ = 3.56</button>
+      <button class="action secondary small" data-v="3.7">μ = 3.7</button>
+      <button class="action secondary small" data-v="3.835">μ = 3.835</button>
+      <button class="action secondary small" data-v="4">μ = 4</button>
+    </div>
+    <div class="ctls">
+      <div class="ctl"><span class="lbl">mostrar fᵏ</span>
+        <div class="seg" id="kSeg"><button data-k="1" class="on">f</button><button data-k="2">f²</button><button data-k="3">f³</button><button data-k="4">f⁴</button><button data-k="8">f⁸</button></div>
+      </div>
+      <div class="ctl"><label for="x0">x₀</label><input type="number" id="x0" min="0" max="1" step="0.01" value="0.2" /></div>
+      <div class="ctl"><label for="N">iteraciones N</label><input type="number" id="N" min="1" max="1000" step="1" value="60" /></div>
+    </div>
+    <div class="ctls">
+      <label class="checks"><input type="checkbox" id="trans" /> descartar transitorio</label>
+      <label class="checks"><input type="checkbox" id="twin" /> segunda órbita, δ =</label>
+      <input type="number" id="delta" step="any" value="0.000001" style="width:110px" />
+    </div>
+    <div class="status" id="orbStatus"></div>
+    <div class="split">
+      <div>
+        <p class="plotLbl">cobweb: xₙ₊₁ vs. xₙ</p>
+        <canvas id="cwCv" class="click" role="img" aria-label="Cobweb del mapa logístico"></canvas>
+        <div class="legend">
+          <span><span class="dot" style="background:#2F6F6B"></span>punto de fᵏ estable</span>
+          <span><span class="dot" style="background:#fff;border:2px solid #C98A2C;width:9px;height:9px"></span>inestable</span>
+        </div>
+      </div>
+      <div>
+        <p class="plotLbl">serie temporal xₙ</p>
+        <canvas id="tsCv" role="img" aria-label="Serie temporal"></canvas>
+        <p class="plotLbl" id="sepLbl">separación |xₙ − x̃ₙ| entre las dos órbitas (escala log)</p>
+        <canvas id="sepCv" role="img" aria-label="Separación entre órbitas"></canvas>
+      </div>
+    </div>
+    <details>
+      <summary>Spoiler: puntos fijos y órbita de período 2</summary>
+      <div class="status" id="anaStatus"></div>
+    </details>
+  </div>
+
+  <!-- ============ 2. Diagrama de bifurcaciones ============ -->
+  <div class="card">
+    <p class="cardTitle">2 · Diagrama de bifurcaciones por simulación</p>
+    <p class="cardSub">Para cada μ (una columna de píxeles) se itera desde x₀ = 0.3, se descarta el transitorio y se dibujan
+      las iteraciones siguientes: un punto fijo atractor da un solo punto por columna, una órbita de período k da k puntos y una
+      órbita aperiódica llena un intervalo. Arrastrá un rectángulo para hacer zoom; un clic sin arrastrar elige μ (y lo pasa a
+      la sección 1).</p>
+    <div class="grid4">
+      <div><span>μ mín</span><input type="number" id="vM0" step="any" value="2.5" /></div>
+      <div><span>μ máx</span><input type="number" id="vM1" step="any" value="4" /></div>
+      <div><span>x mín</span><input type="number" id="vX0" step="any" value="0" /></div>
+      <div><span>x máx</span><input type="number" id="vX1" step="any" value="1" /></div>
+    </div>
+    <div class="btnRow">
+      <button class="action" id="vApply">Aplicar ejes</button>
+      <button class="action secondary" id="vHome">Restaurar ejes</button>
+      <button class="action secondary" id="vBack">Zoom anterior</button>
+      <button class="action secondary" id="vCasc">Zoom: cascada</button>
+      <button class="action secondary" id="vWin">Zoom: ventana cerca de 3.83</button>
+    </div>
+    <div class="ctls">
+      <label class="checks"><input type="checkbox" id="anaBr" /> superponer ramas analíticas (punto fijo y período 2)</label>
+    </div>
+    <p class="plotLbl" id="bdLbl">x asintótico vs. μ</p>
+    <canvas id="bdCv" role="img" aria-label="Diagrama de bifurcaciones del mapa logístico"></canvas>
+    <div class="legend" id="bdLegend" hidden>
+      <span><span class="sw" style="background:#2F6F6B"></span>punto fijo estable</span>
+      <span><span class="sw dash" style="border-color:#C98A2C"></span>inestable</span>
+      <span><span class="sw" style="background:#7D5BA6"></span>período 2</span>
+    </div>
+    <div class="status" id="bdStatus"></div>
+  </div>
+
+  <!-- ============ 3. Cascada de duplicaciones ============ -->
+  <div class="card">
+    <p class="cardTitle">3 · La cascada de duplicaciones de período</p>
+    <p class="cardSub">Cada duplicación ocurre cada vez más rápido. Para medirlo conviene usar los valores
+      <em>superestables</em> sₙ: los μ donde x = ½ (el máximo de f, con f′(½) = 0) pertenece a la órbita de período 2ⁿ.
+      Hay uno entre cada par de duplicaciones sucesivas y se calculan con precisión resolviendo f^(2ⁿ)(½) = ½ con el
+      método de Newton. La última columna es el cociente entre distancias sucesivas.</p>
+    <div class="tblWrap"><table class="tbl" id="feigTbl"></table></div>
+    <div class="status" id="feigStatus"></div>
+  </div>
+
+  <footer>Dinámica no lineal · Cátedra Mindlin</footer>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ---------- paleta ---------- */
+const COL = {
+  ink: "#14202B", axis: "#9AA6B4", grid: "#EEF1F4", tick: "#566173", diag: "#8994A3", bg: "#FFFFFF",
+  stable: "#2F6F6B", unstable: "#C98A2C", p2: "#7D5BA6", orb: "#3A6EA5", twin: "#B5483B", fk: "#7D5BA6"
+};
+const FONT_T = '11px "JetBrains Mono", monospace';
+const SERIF = '"Source Serif 4", Georgia, serif';
+const PL = 48, PR = 14;
+
+/* ---------- utilidades ---------- */
+function setup(c, h) {
+  const w = c.clientWidth, d = window.devicePixelRatio || 1;
+  c.width = Math.round(w * d); c.height = Math.round(h * d); c.style.height = h + "px";
+  const g = c.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, w, h);
+  g.lineJoin = "round"; g.lineCap = "round";
+  return [g, w, d];
+}
+function nice(r) { const p = Math.pow(10, Math.floor(Math.log10(r))), f = r / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
+function ticks(a, b, n) { const s = nice((b - a) / n), o = []; for (let v = Math.ceil(a / s - 1e-9) * s; v <= b + 1e-9 * s; v += s) o.push(Math.abs(v) < 1e-12 * s ? 0 : v); return o; }
+function fmt(v, d = 4) { return String(+v.toFixed(d)).replace("-", "−"); }
+function cl(p) { return Math.max(-1e5, Math.min(1e5, p)); }
+function lab(g, base, sub, x, y, rot) {
+  g.save(); g.translate(x, y); if (rot) g.rotate(-Math.PI / 2);
+  g.fillStyle = COL.ink; g.textBaseline = "alphabetic"; g.textAlign = "left";
+  g.font = "italic 15px " + SERIF; const w1 = g.measureText(base).width;
+  g.font = "italic 11px " + SERIF; const w2 = sub ? g.measureText(sub).width : 0;
+  const s = -(w1 + w2) / 2;
+  g.font = "italic 15px " + SERIF; g.fillText(base, s, 0);
+  if (sub) { g.font = "italic 11px " + SERIF; g.fillText(sub, s + w1, 4); }
+  g.restore();
+}
+function fpDot(g, x, y, stable, r = 5.5) {
+  g.lineWidth = 2.2; g.beginPath(); g.arc(x, y, r, 0, 7);
+  if (stable) { g.fillStyle = COL.stable; g.fill(); } else { g.fillStyle = COL.bg; g.fill(); g.strokeStyle = COL.unstable; g.stroke(); }
+}
+function frame(g, X, Y, x0, x1, y0, y1, PT, S, H, tx, ty, d = 4) {
+  g.lineWidth = 1; g.font = FONT_T;
+  g.strokeStyle = COL.grid; g.beginPath();
+  tx.forEach(v => { g.moveTo(X(v), PT); g.lineTo(X(v), PT + H); });
+  ty.forEach(v => { g.moveTo(PL, Y(v)); g.lineTo(PL + S, Y(v)); });
+  g.stroke();
+  g.strokeStyle = COL.axis; g.strokeRect(PL, PT, S, H);
+  g.fillStyle = COL.tick; g.textAlign = "center"; tx.forEach(v => g.fillText(fmt(v, d), X(v), PT + H + 15));
+  g.textAlign = "right"; ty.forEach(v => g.fillText(fmt(v, d), PL - 6, Y(v) + 4));
+}
+
+/* ---------- el mapa ---------- */
+const st = { mu: 3.2, k: 1, x0: 0.2, N: 60 };
+const f = (m, x) => m * x * (1 - x);
+const fk = (m, x, k) => { for (let i = 0; i < k; i++) x = f(m, x); return x; };
+const dfk = (m, x, k) => { let d = 1; for (let i = 0; i < k; i++) { d *= m * (1 - 2 * x); x = f(m, x); } return d; };
+
+/* puntos fijos de fᵏ en [0, 1]: cambio de signo + bisección; estabilidad por |(fᵏ)′| */
+function fixedK(m, k) {
+  const n = k <= 2 ? 4000 : 24000, F = x => fk(m, x, k) - x, out = [];
+  let a = 0, Fa = F(0);
+  if (Math.abs(Fa) < 1e-13) out.push(0);
+  for (let i = 1; i <= n; i++) {
+    const b = i / n, Fb = F(b);
+    if (Fa * Fb < 0) {
+      let lo = a, hi = b, Flo = Fa;
+      for (let it = 0; it < 60; it++) { const md = (lo + hi) / 2, Fm = F(md); if (Flo * Fm <= 0) hi = md; else { lo = md; Flo = Fm; } }
+      out.push((lo + hi) / 2);
+    } else if (Fb === 0 && i < n) out.push(b);
+    a = b; Fa = Fb;
+  }
+  return out.map(x => ({ x, d: dfk(m, x, k) }));
+}
+
+/* período asintótico: transitorio largo y búsqueda del menor p */
+function detectPeriod(m, x0) {
+  let x = x0; for (let i = 0; i < 4000; i++) x = f(m, x);
+  const seq = [x]; for (let i = 0; i < 300; i++) { x = f(m, x); seq.push(x); }
+  for (let p = 1; p <= 128; p++) {
+    let ok = true;
+    for (let i = 0; i + p < seq.length && i < 120; i++) if (Math.abs(seq[i + p] - seq[i]) > 1e-6) { ok = false; break; }
+    if (ok) return { p, pts: seq.slice(0, p) };
+  }
+  return { p: 0 };
+}
+
+/* =====================================================================
+   1 · Cobweb, serie y separación
+   ===================================================================== */
+let hCw = 400;
+function orbit(x0, n, skip) {
+  let x = x0; if (skip) for (let i = 0; i < 1000; i++) x = f(st.mu, x);
+  const o = [x]; for (let i = 0; i < n; i++) { x = f(st.mu, x); o.push(x); }
+  return o;
+}
+function readX0() { let v = +$("x0").value; if (!(v >= 0 && v <= 1)) v = 0.2; return v; }
+function readDelta() { let v = +$("delta").value; if (!isFinite(v) || v === 0) v = 1e-6; return v; }
+
+function drawCobweb() {
+  const c = $("cwCv"), S = c.clientWidth - PL - PR, PT = 10, PB = 40, h = S + PT + PB, [g] = setup(c, h);
+  hCw = h;
+  const X = v => cl(PL + v * S), Y = v => cl(PT + (1 - v) * S);
+  const tk = ticks(0, 1, 5);
+  frame(g, X, Y, 0, 1, 0, 1, PT, S, S, tk, tk);
+  lab(g, "x", "n", PL + S / 2, h - 4, false); lab(g, "x", "n+1", 14, PT + S / 2, true);
+  g.save(); g.beginPath(); g.rect(PL, PT, S, S); g.clip();
+  g.strokeStyle = COL.diag; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(X(0), Y(0)); g.lineTo(X(1), Y(1)); g.stroke(); g.setLineDash([]);
+  const m = st.mu;
+  if (st.k > 1) {
+    g.strokeStyle = COL.fk; g.globalAlpha = 0.7; g.lineWidth = 1.6; g.beginPath();
+    const n = 300 * st.k;
+    for (let i = 0; i <= n; i++) { const x = i / n, y = fk(m, x, st.k); i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)); }
+    g.stroke(); g.globalAlpha = 1;
+  }
+  g.strokeStyle = COL.ink; g.lineWidth = 2; g.beginPath();
+  for (let i = 0; i <= 300; i++) { const x = i / 300; i ? g.lineTo(X(x), Y(f(m, x))) : g.moveTo(X(x), Y(f(m, x))); }
+  g.stroke();
+  const skip = $("trans").checked, x0 = readX0();
+  const drawOrb = (o, col, lw) => {
+    g.strokeStyle = col; g.lineWidth = lw; g.globalAlpha = 0.85; g.beginPath(); g.moveTo(X(o[0]), Y(skip ? o[0] : 0));
+    for (let i = 0; i < o.length - 1; i++) { g.lineTo(X(o[i]), Y(o[i + 1])); g.lineTo(X(o[i + 1]), Y(o[i + 1])); }
+    g.stroke(); g.globalAlpha = 1;
+    g.fillStyle = col; g.beginPath(); g.arc(X(o[0]), Y(skip ? o[0] : 0), 4, 0, 7); g.fill();
+  };
+  if ($("twin").checked) drawOrb(orbit(Math.min(1, Math.max(0, x0 + readDelta())), st.N, skip), COL.twin, 1.1);
+  drawOrb(orbit(x0, st.N, skip), COL.orb, 1.3);
+  g.restore();
+  /* puntos fijos de fᵏ */
+  const pts = fixedK(m, st.k);
+  pts.forEach(p => fpDot(g, X(p.x), Y(p.x), Math.abs(p.d) < 1, pts.length > 40 ? 3 : 5.5));
+  g.font = "italic 13px " + SERIF; g.textAlign = "left"; g.fillStyle = COL.diag; g.fillText("xₙ₊₁ = xₙ", PL + S - 78, PT + S - 8);
+  return pts;
+}
+
+function drawSeries() {
+  const c = $("tsCv"), twin = $("twin").checked, h = twin ? Math.round(hCw * 0.55) : hCw, [g, w] = setup(c, h);
+  const N = st.N, T = 8, B = 40, H = h - T - B, W = w - PL - PR;
+  const XN = i => PL + i / N * W, YN = v => cl(T + (1 - v) * H);
+  const ty = ticks(0, 1, 4), tx = ticks(0, N, Math.min(N, 8)).filter(v => Math.abs(v - Math.round(v)) < 1e-9);
+  g.lineWidth = 1; g.font = FONT_T;
+  g.strokeStyle = COL.grid; g.beginPath(); ty.forEach(v => { g.moveTo(PL, YN(v)); g.lineTo(PL + W, YN(v)); }); g.stroke();
+  g.strokeStyle = COL.axis; g.strokeRect(PL, T, W, H);
+  g.fillStyle = COL.tick; g.textAlign = "right"; ty.forEach(v => g.fillText(fmt(v), PL - 6, YN(v) + 4));
+  g.textAlign = "center"; tx.forEach(v => g.fillText(fmt(v), XN(v), T + H + 15));
+  lab(g, $("trans").checked ? "n − 1000" : "n", "", PL + W / 2, h - 4, false); lab(g, "x", "n", 14, T + H / 2, true);
+  const skip = $("trans").checked, x0 = readX0(), r = N > 120 ? 1.6 : N > 60 ? 2.2 : 3;
+  const line = (o, col) => {
+    g.strokeStyle = col; g.globalAlpha = 0.55; g.lineWidth = 1.1; g.beginPath();
+    o.forEach((v, i) => i ? g.lineTo(XN(i), YN(v)) : g.moveTo(XN(i), YN(v))); g.stroke();
+    g.globalAlpha = 1; g.fillStyle = col; o.forEach((v, i) => { g.beginPath(); g.arc(XN(i), YN(v), r, 0, 7); g.fill(); });
+  };
+  g.save(); g.beginPath(); g.rect(PL, T, W, H); g.clip();
+  const o1 = orbit(x0, N, skip);
+  let o2 = null;
+  if (twin) { o2 = orbit(Math.min(1, Math.max(0, x0 + readDelta())), N, skip); line(o2, COL.twin); }
+  line(o1, COL.orb);
+  g.restore();
+  /* separación en escala log */
+  const sc = $("sepCv");
+  $("sepLbl").hidden = sc.hidden = !twin;
+  if (!twin) return;
+  const hs = Math.max(150, hCw - h - 32), [s] = setup(sc, hs), Hs = hs - T - B;
+  const dist = o1.map((v, i) => Math.max(1e-16, Math.abs(v - o2[i])));
+  const L0 = -16, L1 = 0, YL = v => T + (L1 - Math.log10(v)) / (L1 - L0) * Hs;
+  s.lineWidth = 1; s.font = FONT_T;
+  const tl = [-16, -12, -8, -4, 0];
+  s.strokeStyle = COL.grid; s.beginPath(); tl.forEach(e => { s.moveTo(PL, YL(10 ** e)); s.lineTo(PL + W, YL(10 ** e)); }); s.stroke();
+  s.strokeStyle = COL.axis; s.strokeRect(PL, T, W, Hs);
+  s.fillStyle = COL.tick; s.textAlign = "right"; tl.forEach(e => s.fillText("1e" + String(e).replace("-", "−"), PL - 4, YL(10 ** e) + 4));
+  s.textAlign = "center"; tx.forEach(v => s.fillText(fmt(v), XN(v), T + Hs + 15));
+  lab(s, $("trans").checked ? "n − 1000" : "n", "", PL + W / 2, hs - 4, false);
+  s.save(); s.beginPath(); s.rect(PL, T, W, Hs); s.clip();
+  s.strokeStyle = COL.twin; s.lineWidth = 1.4; s.beginPath();
+  dist.forEach((v, i) => i ? s.lineTo(XN(i), YL(v)) : s.moveTo(XN(i), YL(v))); s.stroke();
+  s.restore();
+}
+
+function orbitInfo(pts) {
+  const m = st.mu, x0 = readX0(), P = detectPeriod(m, x0);
+  let t = `μ = ${fmt(m, 4)}   `;
+  if (P.p === 1) t += `la órbita converge a un punto fijo: x ≈ ${fmt(P.pts[0], 5)}`;
+  else if (P.p > 1) t += `la órbita converge a una órbita de período <span class="s">${P.p}</span>`;
+  else t += '<span class="u">no se detecta período ≤ 128</span> tras 4000 iteraciones <span class="m">(¿órbita aperiódica, o convergencia muy lenta cerca de una bifurcación?)</span>';
+  const ns = pts.filter(p => Math.abs(p.d) < 1).length, kk = st.k === 1 ? "f" : "f" + "⁰¹²³⁴⁵⁶⁷⁸⁹"[st.k];
+  t += `\n${kk} tiene ${pts.length} punto${pts.length === 1 ? "" : "s"} fijo${pts.length === 1 ? "" : "s"} en [0, 1]: <span class="s">${ns} estable${ns === 1 ? "" : "s"}</span>, <span class="u">${pts.length - ns} inestable${pts.length - ns === 1 ? "" : "s"}</span>`;
+  if (st.k > 1 && pts.length && pts.length <= 8) t += '\n<span class="m">x = ' + pts.map(p => fmt(p.x, 4)).join(", ") + "</span>";
+  $("orbStatus").innerHTML = t;
+}
+
+function anaInfo() {
+  const m = st.mu; let t = `μ = ${fmt(m, 4)}\n`;
+  t += `x* = 0:  λ = f′(0) = μ = ${fmt(m, 3)}  ${tag(m)}\n`;
+  if (m > 1) { const xs = 1 - 1 / m; t += `x* = 1 − 1/μ = ${fmt(xs, 4)}:  λ = 2 − μ = ${fmt(2 - m, 3)}  ${tag(2 - m)}\n`; }
+  else t += '<span class="m">x* = 1 − 1/μ queda fuera de [0, 1] para μ &lt; 1 (nace en μ = 1, transcrítica con x* = 0)</span>\n';
+  if (m > 3) {
+    const r = Math.sqrt((m + 1) * (m - 3)), p = (m + 1 - r) / (2 * m), q = (m + 1 + r) / (2 * m), l2 = 4 + 2 * m - m * m;
+    t += `período 2 (existe para μ &gt; 3): {${fmt(p, 4)}, ${fmt(q, 4)}}\n  λ₂ = (f²)′ = f′(p) f′(q) = 4 + 2μ − μ² = ${fmt(l2, 3)}  ${tag(l2)}\n`;
+    t += '<span class="m">  estable para 3 &lt; μ &lt; 1 + √6 ≈ 3.4495; en μ = 1 + √6 λ₂ = −1 y se duplica otra vez</span>';
+  } else t += '<span class="m">período 2: sólo existe para μ &gt; 3 (nace en la duplicación de período de 1 − 1/μ, donde λ = −1)</span>';
+  $("anaStatus").innerHTML = t;
+  function tag(l) { return Math.abs(Math.abs(l) - 1) < 1e-9 ? '<span class="p">(marginal)</span>' : Math.abs(l) < 1 ? '<span class="s">(estable)</span>' : '<span class="u">(inestable)</span>'; }
+}
+
+function drawOrbits() {
+  const pts = drawCobweb(); drawSeries(); orbitInfo(pts); anaInfo();
+  document.querySelectorAll("#muCases button").forEach(b => b.classList.toggle("on", Math.abs(+b.dataset.v - st.mu) < 1e-9));
+}
+
+function setMu(v) {
+  if (!isFinite(v)) return; v = Math.max(0, Math.min(4, v)); st.mu = v;
+  $("mu").value = v; $("muN").value = +v.toFixed(6);
+  drawOrbits(); drawBif(false);
+}
+$("mu").addEventListener("input", e => setMu(+e.target.value));
+$("muN").addEventListener("change", e => setMu(+e.target.value));
+document.querySelectorAll("#muCases button").forEach(b => b.addEventListener("click", () => setMu(+b.dataset.v)));
+document.querySelectorAll("#kSeg button").forEach(b => b.addEventListener("click", () => {
+  st.k = +b.dataset.k; document.querySelectorAll("#kSeg button").forEach(o => o.classList.toggle("on", o === b)); drawOrbits();
+}));
+$("x0").addEventListener("change", e => { e.target.value = readX0(); drawOrbits(); });
+$("N").addEventListener("change", e => { let n = Math.round(+e.target.value); if (!(n >= 1)) n = 60; if (n > 1000) n = 1000; e.target.value = n; st.N = n; drawOrbits(); });
+["trans", "twin"].forEach(id => $(id).addEventListener("change", drawOrbits));
+$("delta").addEventListener("change", e => { e.target.value = readDelta(); drawOrbits(); });
+$("cwCv").addEventListener("click", e => {
+  const c = e.currentTarget, S = c.clientWidth - PL - PR, v = (e.clientX - c.getBoundingClientRect().left - PL) / S;
+  if (v >= 0 && v <= 1) { $("x0").value = +v.toFixed(4); drawOrbits(); }
+});
+
+/* =====================================================================
+   2 · Diagrama de bifurcaciones
+   ===================================================================== */
+const HOME = { m0: 2.5, m1: 4, x0: 0, x1: 1 };
+let view = { ...HOME }, viewStack = [], bifCache = null, drag = null;
+const BH = 420, BT = 10, BB = 40;
+
+function writeView() { $("vM0").value = +view.m0.toFixed(6); $("vM1").value = +view.m1.toFixed(6); $("vX0").value = +view.x0.toFixed(6); $("vX1").value = +view.x1.toFixed(6); }
+function setView(v, push = true) {
+  if (!(v.m1 > v.m0 && v.x1 > v.x0)) return;
+  v.m0 = Math.max(0, v.m0); v.m1 = Math.min(4, v.m1);
+  if (push) viewStack.push({ ...view });
+  view = v; writeView(); drawBif(true);
+}
+
+function computeBif(cols, rows) {
+  const { m0, m1, x0: y0, x1: y1 } = view, cnt = new Uint32Array(cols * rows);
+  const span = (m1 - m0), trans = span < 0.05 ? 3000 : span < 0.3 ? 1500 : 800, keep = Math.min(1200, Math.max(250, rows));
+  for (let i = 0; i < cols; i++) {
+    const m = m0 + span * (i + 0.5) / cols; let x = 0.3;
+    for (let k = 0; k < trans; k++) x = m * x * (1 - x);
+    for (let k = 0; k < keep; k++) {
+      x = m * x * (1 - x);
+      const r = Math.floor((y1 - x) / (y1 - y0) * rows);
+      if (r >= 0 && r < rows) cnt[r * cols + i]++;
+    }
+  }
+  const off = document.createElement("canvas"); off.width = cols; off.height = rows;
+  const og = off.getContext("2d"), img = og.createImageData(cols, rows), D = img.data;
+  for (let p = 0; p < cnt.length; p++) {
+    const n = cnt[p]; if (!n) continue;
+    const a = 1 - Math.exp(-n / 2.5);
+    D[4 * p] = 20; D[4 * p + 1] = 32; D[4 * p + 2] = 43; D[4 * p + 3] = Math.round(255 * Math.min(1, 0.18 + 0.82 * a));
+  }
+  og.putImageData(img, 0, 0);
+  return off;
+}
+
+function drawBif(recompute) {
+  const c = $("bdCv"), [g, w, dpr] = setup(c, BH), W = w - PL - PR, H = BH - BT - BB;
+  const { m0, m1, x0: y0, x1: y1 } = view;
+  const XM = v => PL + (v - m0) / (m1 - m0) * W, YX = v => cl(BT + (y1 - v) / (y1 - y0) * H);
+  const cols = Math.max(50, Math.round(W * dpr)), rows = Math.max(50, Math.round(H * dpr));
+  const key = [m0, m1, y0, y1, cols, rows].join();
+  if (recompute || !bifCache || bifCache.key !== key) bifCache = { key, img: computeBif(cols, rows) };
+  const dm = m1 - m0, dg = dm < 0.001 ? 6 : dm < 0.01 ? 5 : 4;
+  frame(g, XM, YX, m0, m1, y0, y1, BT, W, H, ticks(m0, m1, 6), ticks(y0, y1, 5), dg);
+  lab(g, "μ", "", PL + W / 2, BH - 4, false); lab(g, "x", "", 14, BT + H / 2, true);
+  g.save(); g.beginPath(); g.rect(PL, BT, W, H); g.clip();
+  g.imageSmoothingEnabled = false; g.drawImage(bifCache.img, PL, BT, W, H);
+  if ($("anaBr").checked) {
+    const run = (fn, a, b, col, solid) => {
+      a = Math.max(a, m0); b = Math.min(b, m1); if (b <= a) return;
+      g.strokeStyle = col; g.lineWidth = solid ? 2.4 : 1.6; g.setLineDash(solid ? [] : [6, 5]); g.beginPath();
+      for (let i = 0; i <= 300; i++) { const m = a + (b - a) * i / 300, v = fn(m); i ? g.lineTo(XM(m), YX(v)) : g.moveTo(XM(m), YX(v)); }
+      g.stroke(); g.setLineDash([]);
+    };
+    const s6 = 1 + Math.sqrt(6);
+    run(() => 0, 0, 1, COL.stable, true); run(() => 0, 1, 4, COL.unstable, false);
+    run(m => 1 - 1 / m, 1, 3, COL.stable, true); run(m => 1 - 1 / m, 3, 4, COL.unstable, false);
+    [-1, 1].forEach(sg => {
+      const br = m => (m + 1 + sg * Math.sqrt(Math.max(0, (m + 1) * (m - 3)))) / (2 * m);
+      run(br, 3, s6, COL.p2, true); run(br, s6, 4, COL.p2, false);
+    });
+  }
+  if (st.mu >= m0 && st.mu <= m1) {
+    g.strokeStyle = COL.orb; g.globalAlpha = 0.9; g.lineWidth = 1.5; g.beginPath(); g.moveTo(XM(st.mu), BT); g.lineTo(XM(st.mu), BT + H); g.stroke(); g.globalAlpha = 1;
+  }
+  if (drag && drag.moved) {
+    const xa = Math.min(drag.ax, drag.bx), xb = Math.max(drag.ax, drag.bx), ya = Math.min(drag.ay, drag.by), yb = Math.max(drag.ay, drag.by);
+    g.fillStyle = "rgba(201,138,44,0.12)"; g.fillRect(xa, ya, xb - xa, yb - ya);
+    g.strokeStyle = COL.unstable; g.lineWidth = 1.2; g.setLineDash([4, 3]); g.strokeRect(xa, ya, xb - xa, yb - ya); g.setLineDash([]);
+  }
+  g.restore();
+  $("bdLegend").hidden = !$("anaBr").checked;
+  $("bdStatus").textContent = `ventana: μ ∈ [${fmt(m0, 6)}, ${fmt(m1, 6)}],  x ∈ [${fmt(y0, 4)}, ${fmt(y1, 4)}]    μ actual = ${fmt(st.mu, 6)} (línea azul)`;
+  geomB = { W, H };
+}
+let geomB = { W: 1, H: 1 };
+const bdPos = e => { const r = $("bdCv").getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+$("bdCv").addEventListener("pointerdown", e => { const p = bdPos(e); drag = { ax: p.x, ay: p.y, bx: p.x, by: p.y, moved: false }; $("bdCv").setPointerCapture(e.pointerId); });
+$("bdCv").addEventListener("pointermove", e => {
+  if (!drag) return; const p = bdPos(e); drag.bx = p.x; drag.by = p.y;
+  if (Math.abs(drag.bx - drag.ax) + Math.abs(drag.by - drag.ay) > 6) drag.moved = true;
+  if (drag.moved) drawBif(false);
+});
+function endDrag(e) {
+  if (!drag) return; const d = drag; drag = null;
+  const { W, H } = geomB, { m0, m1, x0: y0, x1: y1 } = view;
+  const toM = x => m0 + (Math.min(Math.max(x, PL), PL + W) - PL) / W * (m1 - m0), toX = y => y1 - (Math.min(Math.max(y, BT), BT + H) - BT) / H * (y1 - y0);
+  if (e.type === "pointercancel") { drawBif(false); return; }
+  if (d.moved) {
+    const a = toM(Math.min(d.ax, d.bx)), b = toM(Math.max(d.ax, d.bx)), lo = toX(Math.max(d.ay, d.by)), hi = toX(Math.min(d.ay, d.by));
+    if (b - a > 1e-7 && hi - lo > 1e-7) setView({ m0: a, m1: b, x0: lo, x1: hi }); else drawBif(false);
+  } else if (d.ax >= PL && d.ax <= PL + W && d.ay >= BT && d.ay <= BT + H) setMu(+toM(d.ax).toFixed(6));
+  else drawBif(false);
+}
+$("bdCv").addEventListener("pointerup", endDrag); $("bdCv").addEventListener("pointercancel", endDrag);
+$("vApply").addEventListener("click", () => setView({ m0: +$("vM0").value, m1: +$("vM1").value, x0: +$("vX0").value, x1: +$("vX1").value }));
+$("vHome").addEventListener("click", () => setView({ ...HOME }));
+$("vBack").addEventListener("click", () => { if (viewStack.length) setView(viewStack.pop(), false); });
+$("vCasc").addEventListener("click", () => setView({ m0: 3.44, m1: 3.575, x0: 0.3, x1: 0.92 }));
+$("vWin").addEventListener("click", () => setView({ m0: 3.82, m1: 3.86, x0: 0, x1: 1 }));
+$("anaBr").addEventListener("change", () => drawBif(false));
+
+/* =====================================================================
+   3 · Valores superestables y cociente de Feigenbaum
+   ===================================================================== */
+function superstable() {
+  const g = (m, p) => fk(m, 0.5, p) - 0.5, s = [2, 1 + Math.sqrt(5)];
+  for (let n = 2; n <= 8; n++) {
+    const p = 2 ** n; let m = s[n - 1] + (s[n - 1] - s[n - 2]) / 4.669;
+    for (let it = 0; it < 60; it++) {
+      const hh = 1e-10, gp = (g(m + hh, p) - g(m - hh, p)) / (2 * hh), dm = g(m, p) / gp; m -= dm;
+      if (Math.abs(dm) < 1e-14) break;
+    }
+    s.push(m);
+  }
+  return s;
+}
+function buildTable() {
+  const s = superstable();
+  let h = "<tr><th>n</th><th>período 2ⁿ</th><th>sₙ</th><th>sₙ − sₙ₋₁</th><th>δₙ = (sₙ₋₁ − sₙ₋₂)/(sₙ − sₙ₋₁)</th><th></th></tr>";
+  s.forEach((v, n) => {
+    const d = n ? v - s[n - 1] : null, r = n >= 2 ? (s[n - 1] - s[n - 2]) / d : null;
+    h += `<tr><td>${n}</td><td>${2 ** n}</td><td>${v.toFixed(10)}</td><td>${d === null ? "—" : d.toExponential(3).replace("-", "−")}</td><td>${r === null ? "—" : r.toFixed(5)}</td><td><button data-m="${v}">ir</button></td></tr>`;
+  });
+  $("feigTbl").innerHTML = h;
+  $("feigTbl").querySelectorAll("button").forEach(b => b.addEventListener("click", () => setMu(+b.dataset.m)));
+  const last = (s[7] - s[6]) / (s[8] - s[7]);
+  $("feigStatus").innerHTML = `Los cocientes se estabilizan en δ ≈ ${last.toFixed(4)}: cada duplicación ocurre en un intervalo de μ unas 4.67 veces más corto que el anterior.\n` +
+    `Las sₙ se acumulan en μ∞ ≈ ${(s[8] + (s[8] - s[7]) / (last - 1)).toFixed(5)}; a partir de ahí aparecen órbitas aperiódicas.\n` +
+    `<span class="m">Probá «ir» en una fila y mirá en la sección 1 que la órbita pasa por x = ½, y en la sección 2 dónde cae la línea de μ.</span>`;
+}
+
+/* ---------- inicio ---------- */
+function drawAll() { drawOrbits(); drawBif(false); }
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+writeView(); buildTable(); drawAll();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>
+</body>
+</html>
